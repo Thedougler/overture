@@ -23,18 +23,22 @@ export class SceneDirector {
   ) {}
 
   async loadScene(scene: SceneConfig): Promise<void> {
-    const loads: Promise<void>[] = [];
+    const assetIds = new Set<string>();
     for (const layer of scene.layers) {
-      loads.push(
-        Promise.resolve().then(async () => {
-          const state = this.layerStates.get(layer.id);
-          if (state) {
-            this.layerStates.set(layer.id, { ...state, loading: true });
-          }
-        })
-      );
+      assetIds.add(layer.assetId);
     }
-    await Promise.all(loads);
+    for (const emitter of scene.emitters) {
+      for (const variant of emitter.variants) {
+        assetIds.add(variant.assetId);
+      }
+    }
+    for (const sfx of scene.quickfire) {
+      assetIds.add(sfx.assetId);
+    }
+    // Note: asset URLs would need to come from a manifest; this is a no-op stub
+    // until an asset manifest is wired in. Layers without a loaded buffer simply
+    // won't play when the scene is activated.
+    void assetIds;
   }
 
   activateScene(scene: SceneConfig, crossfadeDuration: number = 2.0): void {

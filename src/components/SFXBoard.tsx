@@ -10,7 +10,7 @@ interface SFXBoardProps {
 
 export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
   const [category, setCategory] = useState<SFXCategory>('Favourites');
-  const holdTimers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const holdTimers = useRef<Map<string, number>>(new Map());
 
   const displayed = sfxLibrary.filter((s) => s.category === category);
 
@@ -24,14 +24,14 @@ export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
   };
 
   const startHold = (assetId: string) => {
-    const timer = setInterval(() => onFireSFX(assetId), 300);
+    const timer = window.setInterval(() => onFireSFX(assetId), 300);
     holdTimers.current.set(assetId, timer);
   };
 
   const stopHold = (assetId: string) => {
     const timer = holdTimers.current.get(assetId);
     if (timer) {
-      clearInterval(timer);
+      window.clearInterval(timer);
       holdTimers.current.delete(assetId);
     }
   };
@@ -80,22 +80,22 @@ export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
             variant="outlined"
             onClick={() => onFireSFX(sfx.assetId)}
             onMouseDown={() => {
-              const t = setTimeout(() => startHold(sfx.assetId), 500);
-              holdTimers.current.set(`${sfx.id}-long`, t as unknown as ReturnType<typeof setInterval>);
+              const t = window.setTimeout(() => startHold(sfx.assetId), 500);
+              holdTimers.current.set(`${sfx.id}-long`, t);
             }}
             onMouseUp={() => {
               const lt = holdTimers.current.get(`${sfx.id}-long`);
-              if (lt) { clearTimeout(lt as unknown as ReturnType<typeof setTimeout>); holdTimers.current.delete(`${sfx.id}-long`); }
+              if (lt) { window.clearTimeout(lt); holdTimers.current.delete(`${sfx.id}-long`); }
               stopHold(sfx.assetId);
             }}
             onMouseLeave={() => stopHold(sfx.assetId)}
             onTouchStart={() => {
-              const t = setTimeout(() => startHold(sfx.assetId), 500);
-              holdTimers.current.set(`${sfx.id}-long`, t as unknown as ReturnType<typeof setInterval>);
+              const t = window.setTimeout(() => startHold(sfx.assetId), 500);
+              holdTimers.current.set(`${sfx.id}-long`, t);
             }}
             onTouchEnd={() => {
               const lt = holdTimers.current.get(`${sfx.id}-long`);
-              if (lt) { clearTimeout(lt as unknown as ReturnType<typeof setTimeout>); holdTimers.current.delete(`${sfx.id}-long`); }
+              if (lt) { window.clearTimeout(lt); holdTimers.current.delete(`${sfx.id}-long`); }
               stopHold(sfx.assetId);
             }}
             sx={{
