@@ -12,12 +12,20 @@ export class AssetManager {
       return this.loadingPromises.get(id)!;
     }
     const promise = (async () => {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
-      this.bufferCache.set(id, audioBuffer);
-      this.loadingPromises.delete(id);
-      return audioBuffer;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to load audio buffer for "${id}" from "${url}": ${response.status} ${response.statusText}`
+          );
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+        this.bufferCache.set(id, audioBuffer);
+        return audioBuffer;
+      } finally {
+        this.loadingPromises.delete(id);
+      }
     })();
     this.loadingPromises.set(id, promise);
     return promise;

@@ -67,6 +67,10 @@ export class SourcePlayer {
     return sourceId;
   }
 
+  getSourceGain(sourceId: string): GainNode | undefined {
+    return this.activeSources.get(sourceId)?.gain;
+  }
+
   stopSource(sourceId: string, time?: number): void {
     const entry = this.activeSources.get(sourceId);
     if (!entry) return;

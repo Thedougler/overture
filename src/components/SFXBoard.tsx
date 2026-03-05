@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Box, Button, Tab, Tabs, Typography } from '@mui/material';
 import { sfxLibrary, sfxCategories, SFXCategory } from '@/data/sfxLibrary';
 
@@ -10,7 +10,19 @@ interface SFXBoardProps {
 
 export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
   const [category, setCategory] = useState<SFXCategory>('Favourites');
-  const holdTimers = useRef<Map<string, number>>(new Map());
+  const longPressTimers = useRef<Map<string, number>>(new Map());
+  const repeatIntervals = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    const timers = longPressTimers.current;
+    const intervals = repeatIntervals.current;
+    return () => {
+      for (const t of timers.values()) window.clearTimeout(t);
+      timers.clear();
+      for (const i of intervals.values()) window.clearInterval(i);
+      intervals.clear();
+    };
+  }, []);
 
   const displayed = sfxLibrary.filter((s) => s.category === category);
 
@@ -24,16 +36,25 @@ export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
   };
 
   const startHold = (assetId: string) => {
-    const timer = window.setInterval(() => onFireSFX(assetId), 300);
-    holdTimers.current.set(assetId, timer);
+    const interval = window.setInterval(() => onFireSFX(assetId), 300);
+    repeatIntervals.current.set(assetId, interval);
   };
 
   const stopHold = (assetId: string) => {
-    const timer = holdTimers.current.get(assetId);
-    if (timer) {
-      window.clearInterval(timer);
-      holdTimers.current.delete(assetId);
+    const interval = repeatIntervals.current.get(assetId);
+    if (interval) {
+      window.clearInterval(interval);
+      repeatIntervals.current.delete(assetId);
     }
+  };
+
+  const cancelLongPress = (sfxId: string, assetId: string) => {
+    const lt = longPressTimers.current.get(sfxId);
+    if (lt) {
+      window.clearTimeout(lt);
+      longPressTimers.current.delete(sfxId);
+    }
+    stopHold(assetId);
   };
 
   return (
@@ -81,29 +102,30 @@ export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
             onClick={() => onFireSFX(sfx.assetId)}
             onMouseDown={() => {
               const t = window.setTimeout(() => startHold(sfx.assetId), 500);
-              holdTimers.current.set(`${sfx.id}-long`, t);
+              longPressTimers.current.set(sfx.id, t);
             }}
             onMouseUp={() => {
-              const lt = holdTimers.current.get(`${sfx.id}-long`);
+              const lt = longPressTimers.current.get(sfx.id);
               if (lt) {
                 window.clearTimeout(lt);
-                holdTimers.current.delete(`${sfx.id}-long`);
+                longPressTimers.current.delete(sfx.id);
               }
               stopHold(sfx.assetId);
             }}
-            onMouseLeave={() => stopHold(sfx.assetId)}
+            onMouseLeave={() => cancelLongPress(sfx.id, sfx.assetId)}
             onTouchStart={() => {
               const t = window.setTimeout(() => startHold(sfx.assetId), 500);
-              holdTimers.current.set(`${sfx.id}-long`, t);
+              longPressTimers.current.set(sfx.id, t);
             }}
             onTouchEnd={() => {
-              const lt = holdTimers.current.get(`${sfx.id}-long`);
+              const lt = longPressTimers.current.get(sfx.id);
               if (lt) {
                 window.clearTimeout(lt);
-                holdTimers.current.delete(`${sfx.id}-long`);
+                longPressTimers.current.delete(sfx.id);
               }
               stopHold(sfx.assetId);
             }}
+            onTouchCancel={() => cancelLongPress(sfx.id, sfx.assetId)}
             sx={{
               flexDirection: 'column',
               aspectRatio: '1',

@@ -5,6 +5,8 @@ import { AudioScheduler } from './scheduler';
 import { RandomContainer } from './randomContainer';
 import { SceneConfig, LayerState } from './types';
 
+const GAIN_RAMP_TIME_CONSTANT = 0.01;
+
 export class SceneDirector {
   currentScene: SceneConfig | null = null;
   private pendingScene: SceneConfig | null = null;
@@ -63,17 +65,15 @@ export class SceneDirector {
     this.layerStates.clear();
 
     for (const layer of scene.layers) {
-      this.layerStates.set(layer.id, {
-        id: layer.id,
-        muted: false,
-        volume: layer.baseGain,
-        loading: false,
-        error: false,
-      });
-
-      // Play layer if buffer is loaded
       const buffer = this.assetManager.getBuffer(layer.assetId);
       if (buffer) {
+        this.layerStates.set(layer.id, {
+          id: layer.id,
+          muted: false,
+          volume: layer.baseGain,
+          loading: false,
+          error: false,
+        });
         const sourceId = this.sourcePlayer.playBuffer(layer.id, buffer, {
           bus: layer.bus,
           loop: true,
@@ -84,6 +84,14 @@ export class SceneDirector {
           startTime: now,
         });
         this.layerSources.set(layer.id, sourceId);
+      } else {
+        this.layerStates.set(layer.id, {
+          id: layer.id,
+          muted: false,
+          volume: layer.baseGain,
+          loading: false,
+          error: true,
+        });
       }
     }
 
@@ -110,12 +118,28 @@ export class SceneDirector {
     if (!state) return;
     const newMuted = !state.muted;
     this.layerStates.set(layerId, { ...state, muted: newMuted });
+    const sourceId = this.layerSources.get(layerId);
+    if (sourceId) {
+      const gain = this.sourcePlayer.getSourceGain(sourceId);
+      if (gain) {
+        gain.gain.setTargetAtTime(newMuted ? 0 : state.volume, this.ctx.currentTime, GAIN_RAMP_TIME_CONSTANT);
+      }
+    }
   }
 
   setLayerVolume(layerId: string, volume: number): void {
     const state = this.layerStates.get(layerId);
     if (!state) return;
     this.layerStates.set(layerId, { ...state, volume });
+    if (!state.muted) {
+      const sourceId = this.layerSources.get(layerId);
+      if (sourceId) {
+        const gain = this.sourcePlayer.getSourceGain(sourceId);
+        if (gain) {
+          gain.gain.setTargetAtTime(volume, this.ctx.currentTime, GAIN_RAMP_TIME_CONSTANT);
+        }
+      }
+    }
   }
 
   fireSFX(assetId: string): void {

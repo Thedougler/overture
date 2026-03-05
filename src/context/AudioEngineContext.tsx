@@ -12,7 +12,7 @@ interface AudioEngineContextValue {
   transitioning: boolean;
   masterVolume: number;
   initializeEngine: () => Promise<void>;
-  setCurrentScene: (scene: SceneConfig) => void;
+  setCurrentScene: (scene: SceneConfig) => Promise<void>;
   toggleLayer: (id: string) => void;
   setLayerVolume: (id: string, vol: number) => void;
   fireSFX: (assetId: string) => void;
@@ -27,7 +27,7 @@ const AudioEngineContext = createContext<AudioEngineContextValue>({
   transitioning: false,
   masterVolume: 0.8,
   initializeEngine: async () => {},
-  setCurrentScene: () => {},
+  setCurrentScene: async () => {},
   toggleLayer: () => {},
   setLayerVolume: () => {},
   fireSFX: () => {},
@@ -72,9 +72,10 @@ export function AudioEngineProvider({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  const setCurrentScene = useCallback((scene: SceneConfig) => {
+  const setCurrentScene = useCallback(async (scene: SceneConfig) => {
     const engine = engineRef.current;
     if (!engine || !engine.director) return;
+    await engine.director.loadScene(scene, scene.assetManifest ?? {});
     engine.director.activateScene(scene);
   }, []);
 

@@ -50,6 +50,7 @@ export type SceneConfig = {
   layers: LayerConfig[];
   emitters: EmitterConfig[];
   quickfire: QuickfireSFX[];
+  assetManifest?: Record<string, string>;
 };
 
 export type GlobalContext = {
