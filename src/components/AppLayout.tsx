@@ -47,6 +47,14 @@ export default function AppLayout() {
     touchStartX.current = null;
   }, [panelIndex]);
 
+  const handleSelectSceneAndNavigate = useCallback(
+    (scene: SceneConfig) => {
+      setCurrentScene(scene);
+      setPanelIndex(1);
+    },
+    [setCurrentScene]
+  );
+
   const handleSaveScene = (partial: Partial<SceneConfig>) => {
     const newScene: SceneConfig = {
       id: `scene-${Date.now()}`,
@@ -104,7 +112,7 @@ export default function AppLayout() {
       key="browser"
       scenes={scenes}
       currentScene={currentScene}
-      onSelectScene={(scene) => { setCurrentScene(scene); setPanelIndex(1); }}
+      onSelectScene={handleSelectSceneAndNavigate}
       onNewScene={() => setEditOpen(true)}
     />,
     <NowPlaying
