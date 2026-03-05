@@ -14,6 +14,15 @@ interface PlayConfig {
 
 let sourceCounter = 0;
 
+function generateSourceId(id: string): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${id}-${crypto.randomUUID()}`;
+  }
+  // Fallback for environments without crypto.randomUUID
+  sourceCounter = (sourceCounter + 1) % Number.MAX_SAFE_INTEGER;
+  return `${id}-${sourceCounter}`;
+}
+
 export class SourcePlayer {
   private activeSources: Map<string, { source: AudioBufferSourceNode; gain: GainNode }> = new Map();
 
@@ -23,7 +32,7 @@ export class SourcePlayer {
   ) {}
 
   playBuffer(id: string, buffer: AudioBuffer, config: PlayConfig): string {
-    const sourceId = `${id}-${sourceCounter++}`;
+    const sourceId = generateSourceId(id);
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.loop = config.loop ?? false;

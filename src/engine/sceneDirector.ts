@@ -22,23 +22,24 @@ export class SceneDirector {
     private scheduler: AudioScheduler
   ) {}
 
-  async loadScene(scene: SceneConfig): Promise<void> {
-    const assetIds = new Set<string>();
-    for (const layer of scene.layers) {
-      assetIds.add(layer.assetId);
-    }
-    for (const emitter of scene.emitters) {
-      for (const variant of emitter.variants) {
-        assetIds.add(variant.assetId);
+  async loadScene(scene: SceneConfig, manifest: Record<string, string> = {}): Promise<void> {
+    const loads: Promise<unknown>[] = [];
+    const enqueue = (assetId: string) => {
+      const url = manifest[assetId];
+      if (url && !this.assetManager.isLoaded(assetId)) {
+        loads.push(
+          this.assetManager.loadBuffer(assetId, url).catch(() => {
+            // individual asset failures are non-fatal; the layer will be skipped
+          })
+        );
       }
+    };
+    for (const layer of scene.layers) enqueue(layer.assetId);
+    for (const emitter of scene.emitters) {
+      for (const variant of emitter.variants) enqueue(variant.assetId);
     }
-    for (const sfx of scene.quickfire) {
-      assetIds.add(sfx.assetId);
-    }
-    // Note: asset URLs would need to come from a manifest; this is a no-op stub
-    // until an asset manifest is wired in. Layers without a loaded buffer simply
-    // won't play when the scene is activated.
-    void assetIds;
+    for (const sfx of scene.quickfire) enqueue(sfx.assetId);
+    await Promise.all(loads);
   }
 
   activateScene(scene: SceneConfig, crossfadeDuration: number = 2.0): void {
