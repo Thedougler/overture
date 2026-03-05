@@ -85,7 +85,10 @@ export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
             }}
             onMouseUp={() => {
               const lt = holdTimers.current.get(`${sfx.id}-long`);
-              if (lt) { window.clearTimeout(lt); holdTimers.current.delete(`${sfx.id}-long`); }
+              if (lt) {
+                window.clearTimeout(lt);
+                holdTimers.current.delete(`${sfx.id}-long`);
+              }
               stopHold(sfx.assetId);
             }}
             onMouseLeave={() => stopHold(sfx.assetId)}
@@ -95,7 +98,10 @@ export default function SFXBoard({ onFireSFX }: SFXBoardProps) {
             }}
             onTouchEnd={() => {
               const lt = holdTimers.current.get(`${sfx.id}-long`);
-              if (lt) { window.clearTimeout(lt); holdTimers.current.delete(`${sfx.id}-long`); }
+              if (lt) {
+                window.clearTimeout(lt);
+                holdTimers.current.delete(`${sfx.id}-long`);
+              }
               stopHold(sfx.assetId);
             }}
             sx={{
